@@ -106,11 +106,37 @@ async function addSwaggerToSDKConfiguration(readMeMdPath: string | undefined): P
   return false;
 }
 
+async function addMultiApiConfiguration(readMeMdPath: string | undefined): Promise<boolean> {
+  if (readMeMdPath) {
+    const readMeMdContent = await getReadMeMdContent(readMeMdPath);
+    if (readMeMdContent) {
+      const _readMeMdContent: string = readMeMdContent;
+      const firstOfMultiApiField = _readMeMdContent.toLowerCase().indexOf("## multi-api/profile support for autorest v3 generators");
+      const lastOfMultiApiField = _readMeMdContent.toLowerCase().lastIndexOf("## multi-api/profile support for autorest v3 generators");
+      if (firstOfMultiApiField === -1) {
+        console.error(`File ` + chalk.green(readMeMdPath) + ` has no Muti-API field`);
+        return false;
+      }
+      if (firstOfMultiApiField !== lastOfMultiApiField) {
+        console.error(`File ` + chalk.green(readMeMdPath) + ` has more than one Muti-API field`);
+        return false;
+      }
+      const contentBeforeMultiApiField = _readMeMdContent.substr(0, firstOfMultiApiField);
+      const contentAfterMultiApiField = _readMeMdContent.substr(firstOfMultiApiField);
+      const modifiedReadmeMdContent = contentBeforeMultiApiField.concat(constants.multiapiAddon, contentAfterMultiApiField);
+      if (await writeReadMeMdContent(readMeMdPath, modifiedReadmeMdContent)) return true;
+      else return false;
+    }
+  }
+  return false;
+}
+
 utils.executeSynchronous(async () => {
   for (const autogenPath of constants.autogenList) {
     const readMeMdPath = path.join(constants.specsPath, autogenPath, "readme.md");
-    const succeed = await addSwaggerToSDKConfiguration(readMeMdPath);
-    if (succeed) console.log(`add swagger-to-sdk configuration in ${readMeMdPath} done`);
+    if (await addSwaggerToSDKConfiguration(readMeMdPath)) console.log(`add swagger-to-sdk configuration in ${readMeMdPath} done`);
     else console.error(`add swagger-to-sdk configuration in ` + chalk.green(readMeMdPath) + ` failed`);
+    if (await addMultiApiConfiguration(readMeMdPath)) console.log(`add Multiapi configuration in ${readMeMdPath} done`);
+    else console.error(`add Multiapi configuration in ` + chalk.green(readMeMdPath) + ` failed`);
   }
 });
