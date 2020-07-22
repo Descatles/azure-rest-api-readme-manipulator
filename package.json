@@ -13,6 +13,7 @@
     "@ts-common/commonmark-to-markdown": "^1.2.0",
     "commonmark": "^0.28.1",
     "chalk": "^4.0.0",
+    "lodash": "^4.17.15",
     "async": "^3.2.0"
   },
   "author": "",
