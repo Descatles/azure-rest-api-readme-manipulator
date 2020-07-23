@@ -69,6 +69,8 @@ async function addSwaggerToSDKConfiguration(readMeMdPath: string | undefined): P
       const _readMeMdContent: string = readMeMdContent;
       const firstOfSwaggerToSDKField = _readMeMdContent.toLowerCase().indexOf("$(swagger-to-sdk)");
       const lastOfSwaggerToSDKField = _readMeMdContent.toLowerCase().lastIndexOf("$(swagger-to-sdk)");
+      const basePath = `${path.basename(path.dirname(path.dirname(readMeMdPath)))}/${path.basename(path.dirname(readMeMdPath))}`;
+      const afterScripts = `    after_scripts:\n      - npm install --prefix generator && npm run postprocessor `.concat(basePath,` --prefix generator\n`);
 
       if (firstOfSwaggerToSDKField === -1) {
         console.error(`File ` + chalk.green(readMeMdPath) + ` has no Swagger to SDK field`);
@@ -85,7 +87,7 @@ async function addSwaggerToSDKConfiguration(readMeMdPath: string | undefined): P
         const length = "# code generation\n".length;
         const contentBeforeswaggerToSDKField = _readMeMdContent.substr(0, firstOfCodeGenerationField + length);
         const contentAfterswaggerToSDKField = _readMeMdContent.substr(firstOfCodeGenerationField + length);
-        const modifiedReadmeMdContent = contentBeforeswaggerToSDKField.concat(constants.swaggerToSDKField, contentAfterswaggerToSDKField);
+        const modifiedReadmeMdContent = contentBeforeswaggerToSDKField.concat(constants.swaggerToSDKField, afterScripts, '```', contentAfterswaggerToSDKField);
         if (await writeReadMeMdContent(readMeMdPath, modifiedReadmeMdContent)) return true;
         else return false;
       } else {
@@ -98,9 +100,7 @@ async function addSwaggerToSDKConfiguration(readMeMdPath: string | undefined): P
         const contentBeforeSwaggerToSDK = _readMeMdContent.substr(0, firstOfSwaggerToSDKField);
         const contentSwaggerToSDK = _readMeMdContent.substr(firstOfSwaggerToSDKField).substr(0, configurationAddPosition);
         const contentAfterSwaggerToSDK = readMeMdContent.substr(firstOfSwaggerToSDKField).substr(configurationAddPosition);
-        const modifiedReadmeMdContent = contentBeforeSwaggerToSDK.concat(contentSwaggerToSDK
-                                                                 .concat(constants.swaggerToSDKAddon
-                                                                 .concat(contentAfterSwaggerToSDK)));
+        const modifiedReadmeMdContent = contentBeforeSwaggerToSDK.concat(contentSwaggerToSDK, constants.swaggerToSDKAddon, afterScripts, contentAfterSwaggerToSDK);
 
         if (await writeReadMeMdContent(readMeMdPath, modifiedReadmeMdContent)) return true;
         else return false;
@@ -135,61 +135,7 @@ async function addMultiApiConfiguration(readMeMdPath: string | undefined): Promi
   return false;
 }
 
-// async function addSchemaMultiApiReadme(readMeMdPath: string | undefined): Promise<boolean> {
-//   if (readMeMdPath) {
-//     // const apiVersionsByNamespace = await utils.getApiVersionsByNamespace(readMeMdPath);
-//     // const apiVersions = uniqBy(flatMap(values(apiVersionsByNamespace)), s => s.toLowerCase());
-//     // const namespaces = keys(apiVersionsByNamespace);
-//     const searchPath = path.resolve(`${readMeMdPath}/..`);
-//     const apiVersionPaths = await utils.findDirRecursive(searchPath, p => path.basename(p).match(apiVersionRegex) !== null);
-//     // for (const apiVersionPath of apiVersionPaths) {
-//     //   console.log(`apiVersionPath: ` + chalk.green(apiVersionPath) + ` .`);
-//     // }
-//     let multiapiReadMeBody = "### AzureResourceSchema multi-api\n\n``` yaml $(azureresourceschema) && $(multiapi)\nbatch:\n";
-
-//     let multiapiReadMeTail = "";
-
-//     const readMeMdContent = await getReadMeMdContent(readMeMdPath);
-
-//     if (readMeMdContent) {
-//       const _readMeMdContent: string = readMeMdContent;
-//       const firstOfCodeGenerationField = _readMeMdContent.toLowerCase().indexOf("# code generation");
-//       const lastOfCodeGenerationField = _readMeMdContent.toLowerCase().lastIndexOf("# code generation");
-//       if (firstOfCodeGenerationField === -1) {
-//         console.error(`File ` + chalk.green(readMeMdPath) + ` has no Code Generation field`);
-//         return false;
-//       }
-//       if (firstOfCodeGenerationField !== lastOfCodeGenerationField){
-//         console.error(`File ` + chalk.green(readMeMdPath) + ` has more than one Code Generation field`);
-//         return false;
-//       }
-//       const readMeMdContentPart = _readMeMdContent.substr(0, firstOfCodeGenerationField);
-//       for (const apiVersionPath of apiVersionPaths) {
-//         const pos = apiVersionPath.lastIndexOf("Microsoft.");
-//         const relativeApiVersionPath = apiVersionPath.substr(pos);
-//         //console.log(`apiVersionPath: ` + chalk.green(relativeApiVersionPath) + ` .`);
-//         const firstOfInput = readMeMdContentPart.indexOf(relativeApiVersionPath);
-//         const lastOfInput = readMeMdContentPart.lastIndexOf(relativeApiVersionPath);
-//         if (firstOfInput === -1) {
-//           console.error(`Could not find ` + chalk.green(relativeApiVersionPath) + ` in ` + chalk.green(readMeMdPath));
-//           continue;
-//         }
-//         if (firstOfInput !== lastOfInput && lastOfInput - firstOfInput > 100) {
-//           console.error(`Find multiple` + chalk.green(relativeApiVersionPath) + ` in ` + chalk.green(readMeMdPath) + chalk.green(lastOfInput - firstOfInput));
-//           continue;
-//         }
-//       }
-//     }
-//   }
-//   return false;
-// }
-
 async function addSchemaMultiApiReadme(readMeMdPath: string | undefined): Promise<boolean> {
-    // const searchPath = path.resolve(`${readMeMdPath}/..`);
-    // const apiVersionPaths = await utils.findDirRecursive(searchPath, p => path.basename(p).match(apiVersionRegex) !== null);
-    // for (const apiVersionPath of apiVersionPaths) {
-    //   console.log(`apiVersionPath: ` + chalk.green(apiVersionPath) + ` .`);
-    // }
 
     let multiapiReadMeBody = "### AzureResourceSchema multi-api\n\n``` yaml $(azureresourceschema) && $(multiapi)\nbatch:\n";
 
