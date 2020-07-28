@@ -5,7 +5,7 @@ export const swaggerToSDKField = "\n## Swagger to SDK\n\nThis section describes 
 export const multiapiAddon = "## AzureResourceSchema\n\nSee configuration in [readme.azureresourceschema.md](./readme.azureresourceschema.md)\n\n";
 export const multiapiReadMeHead = "## AzureResourceSchema\n\nThese settings apply only when `--azureresourceschema` is specified on the command line.\n\n";
 
-export const rootDir = path.resolve(__dirname, '../');
+export const rootDir = path.resolve(__dirname, '../for_push/');
 export const specsPath = path.join(rootDir, 'azure-rest-api-specs', 'specification');
 export const autogenList: string[] = [
   'addons/resource-manager',
@@ -124,5 +124,6 @@ export const autogenList: string[] = [
   'timeseriesinsights/resource-manager',
   'imagebuilder/resource-manager',
   'windowsesu/resource-manager',
+  'mixedreality/resource-manager',
   'windowsiot/resource-manager'
 ];

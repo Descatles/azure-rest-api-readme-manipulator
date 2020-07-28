@@ -41,6 +41,23 @@ export async function findDirRecursive(basePath: string, filter: (name: string) 
   return results;
 }
 
+export async function getAllBaseName(basePath: string): Promise<string[]> {
+    let results: string[] = [];
+
+    for (const subPathName of await readdir(basePath)) {
+        const subPath = path.resolve(`${basePath}/${subPathName}`);
+        const fileStat = await stat(subPath);
+        if (fileStat.isDirectory()) {
+            for (const subPathDeep of await readdir(subPath)) {
+                if (subPathDeep == 'resource-manager') {
+                    results.push(subPathName.concat("/resource-manager"));
+                }
+            }
+        }
+    }
+    return results;
+}
+
 // export async function getApiVersionsByNamespace(readme: string): Promise<Dictionary<string[]>> {
 //   const searchPath = path.resolve(`${readme}/..`);
 //   const apiVersionPaths = await findDirRecursive(searchPath, p => path.basename(p).match(apiVersionRegex) !== null);

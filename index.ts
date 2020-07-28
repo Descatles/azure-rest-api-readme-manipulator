@@ -70,7 +70,7 @@ async function addSwaggerToSDKConfiguration(readMeMdPath: string | undefined): P
       const firstOfSwaggerToSDKField = _readMeMdContent.toLowerCase().indexOf("$(swagger-to-sdk)");
       const lastOfSwaggerToSDKField = _readMeMdContent.toLowerCase().lastIndexOf("$(swagger-to-sdk)");
       const basePath = `${path.basename(path.dirname(path.dirname(readMeMdPath)))}/${path.basename(path.dirname(readMeMdPath))}`;
-      const afterScripts = `    after_scripts:\n      - npm install --prefix generator && npm run postprocessor `.concat(basePath,` --prefix generator\n`);
+      const afterScripts = `    after_scripts:\n      - npm install --prefix generator && npm run postprocessor `.concat(basePath,` --prefix generator && npm install --prefix tools && npm run test-ci --prefix tools\n`);
 
       if (firstOfSwaggerToSDKField === -1) {
         console.error(`File ` + chalk.green(readMeMdPath) + ` has no Swagger to SDK field`);
@@ -119,6 +119,11 @@ async function addMultiApiConfiguration(readMeMdPath: string | undefined): Promi
       const lastOfMultiApiField = _readMeMdContent.toLowerCase().lastIndexOf("## multi-api/profile support for autorest v3 generators");
       if (firstOfMultiApiField === -1) {
         console.error(`File ` + chalk.green(readMeMdPath) + ` has no Muti-API field`);
+        if (_readMeMdContent.toLowerCase().indexOf('See configuration in'.toLowerCase()) != -1) {
+            const modifiedReadmeMdContent = _readMeMdContent.concat("\n", constants.multiapiAddon);
+            if (await writeReadMeMdContent(readMeMdPath, modifiedReadmeMdContent)) return true;
+            else return false;
+        }
         return false;
       }
       if (firstOfMultiApiField !== lastOfMultiApiField) {
@@ -164,13 +169,22 @@ async function addSchemaMultiApiReadme(readMeMdPath: string | undefined): Promis
 }
 
 utils.executeSynchronous(async () => {
-  for (const autogenPath of constants.autogenList) {
+  let basePaths = await utils.getAllBaseName(constants.specsPath);
+  for (const autogenPath of basePaths) {
     const readMeMdPath = path.join(constants.specsPath, autogenPath, "readme.md");
-    if (!await addSwaggerToSDKConfiguration(readMeMdPath)) console.error(`add swagger-to-sdk configuration in ` + chalk.green(readMeMdPath) + ` failed`);
+    if (!await addSwaggerToSDKConfiguration(readMeMdPath)) {
+        console.error(`add swagger-to-sdk configuration in ` + chalk.red(readMeMdPath) + ` failed`);
+        continue;
+    }
     //else console.log(`add swagger-to-sdk configuration in ${readMeMdPath} done`);
-    if (!await addMultiApiConfiguration(readMeMdPath)) console.error(`add Multiapi configuration in ` + chalk.green(readMeMdPath) + ` failed`);
+    if (!await addMultiApiConfiguration(readMeMdPath)) {
+        console.error(`add Multiapi configuration in ` + chalk.red(readMeMdPath) + ` failed`);
+        continue;
+    }
     //else console.log(`add Multiapi configuration in ${readMeMdPath} done`);
-    if (!await addSchemaMultiApiReadme(readMeMdPath)) console.error(`add MutiApi Readme file for ARM Schema for ` + chalk.green(readMeMdPath) + ` failed`);
+    if (!await addSchemaMultiApiReadme(readMeMdPath)) {
+        console.error(`add MutiApi Readme file for ARM Schema for ` + chalk.red(readMeMdPath) + ` failed`);
+    }
     //else console.log(`add MutiApi Readme file for ARM Schema for ${readMeMdPath} done`);
   }
 });
