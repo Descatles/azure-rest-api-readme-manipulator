@@ -1,6 +1,6 @@
 import {readFileSync, writeFileSync} from 'fs';
 import * as commonmark from 'commonmark';
-import { ReadMeBuilder, ReadMeManipulator } from "@azure/openapi-markdown";
+import { ReadMeBuilder, ReadMeManipulator, getInputFilesForTag } from "@azure/openapi-markdown";
 import { MarkDownEx, parse } from "@ts-common/commonmark-to-markdown"
 import * as constants from './constants';
 import * as utils from './utils';
@@ -168,23 +168,81 @@ async function addSchemaMultiApiReadme(readMeMdPath: string | undefined): Promis
     return false;
 }
 
+function getVersionForInputFile(filePath: string): string {
+  //const apiVersionRegex = /^\d{4}-\d{2}-\d{2}(|-preview)$/;
+  let version = path.basename(path.dirname(filePath));
+  // if (version.match(apiVersionRegex) === null) {
+  //   console.error(`Get version of ` + chalk.red(filePath) + ` failed`);
+  //   return '';
+  // }
+  if (version[0] !== '2') {
+    version = path.basename(path.dirname(path.dirname(filePath)));
+    if (version[0] !== '2') {
+      console.error(`Get version of ` + chalk.red(filePath) + ` failed, version: ` + chalk.red(version));
+      return '';
+    }
+  }
+  return version;
+}
+
+async function getTagsWithMutiVersion(basePath: string): Promise<boolean> {
+  let res: string[] = [];
+  const readMeMdPath = path.join(constants.specsPath, basePath, "readme.md");
+  if (readMeMdPath) {
+    const readMeMdContent = await getReadMeMdContent(readMeMdPath);
+    if (readMeMdContent) {
+      const _readMeMdContent: string = readMeMdContent;
+      const readMeManipulator = new ReadMeManipulator(console, new ReadMeBuilder());
+      const markDownContent = parse(_readMeMdContent);
+      const allTags = readMeManipulator.getAllTags(markDownContent);
+      let markdownParser = new commonmark.Parser();
+      let parsedReadmeMd: commonmark.Node = markdownParser.parse(_readMeMdContent);
+      for (const tag of allTags) {
+        if (tag !== "all-api-versions") {
+          const inputFiles = getInputFilesForTag(parsedReadmeMd, tag);
+          if (inputFiles) {
+            let version: string = '';
+            for (const inputFile of inputFiles) {
+              const currentVersion = getVersionForInputFile(inputFile);
+              if (currentVersion !== '') {
+                if (version !== '' && version !== currentVersion) {
+                  console.error(`Multiple version in ` + chalk.green(basePath) + chalk.green('/') + chalk.green(tag));
+                  break;
+                } else {
+                  version = currentVersion;
+                }
+              }
+            }
+          }
+        }
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
 utils.executeSynchronous(async () => {
   let basePaths = await utils.getAllBaseName(constants.specsPath);
   for (const autogenPath of basePaths) {
-    const readMeMdPath = path.join(constants.specsPath, autogenPath, "readme.md");
-    if (!await addSwaggerToSDKConfiguration(readMeMdPath)) {
-        console.error(`add swagger-to-sdk configuration in ` + chalk.red(readMeMdPath) + ` failed`);
-        continue;
+    if (!getTagsWithMutiVersion(autogenPath)) {
+      console.error(`getTagsWithMutiVersion ` + chalk.red(autogenPath) + ` failed`);
     }
-    //else console.log(`add swagger-to-sdk configuration in ${readMeMdPath} done`);
-    if (!await addMultiApiConfiguration(readMeMdPath)) {
-        console.error(`add Multiapi configuration in ` + chalk.red(readMeMdPath) + ` failed`);
-        continue;
-    }
-    //else console.log(`add Multiapi configuration in ${readMeMdPath} done`);
-    if (!await addSchemaMultiApiReadme(readMeMdPath)) {
-        console.error(`add MutiApi Readme file for ARM Schema for ` + chalk.red(readMeMdPath) + ` failed`);
-    }
-    //else console.log(`add MutiApi Readme file for ARM Schema for ${readMeMdPath} done`);
+
+    // if (!await addSwaggerToSDKConfiguration(readMeMdPath)) {
+    //     console.error(`add swagger-to-sdk configuration in ` + chalk.red(readMeMdPath) + ` failed`);
+    //     continue;
+    // }
+    // //else console.log(`add swagger-to-sdk configuration in ${readMeMdPath} done`);
+    // if (!await addMultiApiConfiguration(readMeMdPath)) {
+    //     console.error(`add Multiapi configuration in ` + chalk.red(readMeMdPath) + ` failed`);
+    //     continue;
+    // }
+    // //else console.log(`add Multiapi configuration in ${readMeMdPath} done`);
+    // if (!await addSchemaMultiApiReadme(readMeMdPath)) {
+    //     console.error(`add MutiApi Readme file for ARM Schema for ` + chalk.red(readMeMdPath) + ` failed`);
+    // }
+    // //else console.log(`add MutiApi Readme file for ARM Schema for ${readMeMdPath} done`);
+
   }
 });
